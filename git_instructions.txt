@@ -2,4 +2,7 @@
 
 -Crear un repositorio en Github
 -Entrar en la carpeta a compartir
--Poner el comando
+-Poner el comando los siguientes comandos:
+    git init
+    git add . #Para añadir todos los documentos que de la carpeta
+    git commit -m "Algun breve comentario"
