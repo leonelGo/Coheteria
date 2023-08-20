@@ -1,0 +1,5 @@
+#Como meter un repositorio nuevo
+
+-Crear un repositorio en Github
+-Entrar en la carpeta a compartir
+-Poner el comando
