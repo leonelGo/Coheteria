@@ -1,0 +1,16 @@
+Que es necesario hacer en paracaidas
+	Primero es definir la forma, los parametros del cohete
+		Dimensiones, material, construcción
+	Base teorica de lo que se espera (Cd, estabilidad, tiempo de caida, tiempo de apertura)
+	Obtener el coeficiente de friccion
+		Simulación en solidworks
+		Tunel de viento
+	Comprar el material (generalmente Nylon ripstop)
+	Construcción del paracaidas
+	Testeo al aire libre: tiempo de caida, Cd real [Se puede saltar(?)]
+		Con un dinamometro y midiendo la velocidad del viento se puede hacer una prueba para el Cd "real"
+	Comparación con los datos teoricos y simulaciones
+
+
+# Se puede hacer como un check list de los pasos completados
+	
