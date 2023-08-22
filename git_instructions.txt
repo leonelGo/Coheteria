@@ -7,5 +7,5 @@
     git add . #Para añadir todos los documentos que de la carpeta
     git commit -m "Algun breve comentario"
     git remote add origin https://github.com/leonelGo/Carpeta # Para añadir una repositorio con nombre de "Carpeta"
-    git push --set-upstream origin master
+    git push --set-upstream origin mast
     git push
