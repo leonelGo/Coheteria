@@ -9,3 +9,7 @@
     git remote add origin https://github.com/leonelGo/Carpeta # Para añadir una repositorio con nombre de "Carpeta"
     git push --set-upstream origin master
     git push
+
+
+    # Para cargar un repositorio en una computadora diferente se necesita poner 
+    git pull --rebase
