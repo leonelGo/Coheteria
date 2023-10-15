@@ -1,5 +1,6 @@
+# Version: Beta
 # @author: Leonel Gerardo González Pérez
-# Este codigo esta basado en en el excel de Richard Nakka  SRM_2013
+# Este codigo esta basado en en el excel de Richard Nakka 'SRM_2013': https://www.nakka-rocketry.net/soft/SRM_2023.zip
 
 # %%
 import matplotlib.pyplot as plt
@@ -137,7 +138,7 @@ Pe = Pa #psi, presion de salida de la tobera
 # ## Condiciones del Cohete
 
 # %%
-theta = np.pi/2 #angulo
+theta_0 = np.pi/2 #angulo
 
 # Mach
 Mt = 1
@@ -174,8 +175,8 @@ De = diametro(Ae)
 # Variables del ciclo iterativo
 
 Inc_M = 0.02 # kg, incremento en la masa total por cada iteración
-Datos = 3000 # cantidad de datos para la regresión del grano
-h0 = 2995 # altura deseada 
+Datos = 5000 # cantidad de datos para la regresión del grano
+h0 = 3000 # altura deseada 
 
 
 # Superficies de quemado
@@ -279,7 +280,7 @@ while h[i] < h0:
     Po_max = max(Po_abs2) - P_a
     Po_final = (0.02/100)*Po_max + P_a
 
-    t_final = -np.log(Po_final/(Po_abs1[-1]*10**-6))*((Vc)*ex_vel(C.R/M, To, k))/(C.R/M*To*(A_t))
+    t_final = - np.log(Po_final/(Po_abs1[-1]*10**-6))*((Vc)*ex_vel(C.R/M, To, k))/(C.R/M*To*(A_t))
     t2 = np.linspace(t1[-1], t1[-1]+ t_final, 100) # tiempo de taill off
 
     t_thrust = np.append(np.array(t1), t2[1:])
@@ -344,21 +345,19 @@ while h[i] < h0:
     def dm_(t, t_b):
         return np.piecewise(t, [t <= t_b, t > t_b], [m_noz_spline(t), 0])
 
-
-
     # Sistema de ecuaciones
     def Sis(CI, t, p):
-        m, Cd, A, t_thrust, t_b, theta, fase = p
+        m, Cd, A, t_thrust, t_b, theta_0, fase = p
         x, u, y, v = CI
 
         F_t = F_(t, t_thrust)
         dm_t = dm_(t, t_b)
         
         dxdt = u
-        dudt = (1/(m-fase*(dm_t)*t))*(fase*F_t - 0.5*densidad_aire(y)*A*Cd*(u**2 + v**2))*np.cos(theta)
+        dudt = (1/(m-fase*(dm_t)*t))*(fase*F_t - 0.5*densidad_aire(y)*A*Cd*(u**2 + v**2))*np.cos(theta_0)
 
         dydt = v
-        dvdt = (1/(m-fase*(dm_t)*t))*(fase*F_t - 0.5*densidad_aire(y)*A*Cd*(u**2 + v**2))*np.sin(theta) - C.g
+        dvdt = (1/(m-fase*(dm_t)*t))*(fase*F_t - 0.5*densidad_aire(y)*A*Cd*(u**2 + v**2))*np.sin(theta_0) - C.g
         
         return [dxdt, dudt, dydt, dvdt]
 
@@ -368,14 +367,14 @@ while h[i] < h0:
     # Calculos fase 1
     CI1 = [0, 0, 0, 0] # Condiciones iniciales x0, Vx0, y0, Vy0
     t_1 = np.linspace(0, t_thr, 1000)
-    p1 = [M_tot[i], Cd , Af, t_thr, t1[-1], theta, 1]
+    p1 = [M_tot[i], Cd , Af, t_thr, t1[-1], theta_0, 1]
     Sol_1 = odeint(Sis, CI1, t_1, args=(p1, ))
 
     # Calculos fase 2
     
     CI2 = [Sol_1[-1,0], Sol_1[-1,1], Sol_1[-1,2], Sol_1[-1,3]] # Condiciones iniciales
     t_2 = np.linspace(t_thr,  50, 1000) # Si en la gráfica no se ve todo el descenso cambiar el tiempo final
-    p2 = [m, Cd , Af, t_thr, t1[-1], theta, 0]
+    p2 = [m, Cd , Af, t_thr, t1[-1], theta_0, 0]
     Sol_2 = odeint(Sis, CI2, t_2, args=(p2, ))
     
 
@@ -394,7 +393,7 @@ while h[i] < h0:
 
 # Figura 1
 plt.figure(figsize=(7,7))
-plt.plot(t_thrust[0:-1], Presion_camara*1000000/6895, 'b-')
+plt.plot(t_thrust[0:-1], Presion_camara*1000000/6895, 'b-', markersize='2.5')
 plt.ylim(bottom=0)
 plt.ylabel('Presión (psi)')
 plt.xlabel('tiempo (s)')
@@ -433,16 +432,26 @@ fig2, (ax1, ax2) = plt.subplots(2, figsize=(7, 7))
 
 ax1.plot(t_1, Sol_1[:, 2], 'r-') # posición en y 
 ax2.plot(t_1, Sol_1[:, 0], 'r-') # posición en x
-ax1.plot(t_2,Sol_2[:, 2], 'b-') # posición en y
+ax1.plot(t_2, Sol_2[:, 2], 'b-') # posición en y
 ax2.plot(t_2, Sol_2[:, 0], 'b-') # posición en x
 
 ax1.set_xlabel('Tiempo [s]')
 ax1.set_ylabel('y [m]')
-ax1.set_ylim(bottom=0)
+ax1.set_ylim(bottom=0, top = max(Sol_2[:, 2]) + 5 )
 
 ax2.set_xlabel('Tiempo [s]')
 ax2.set_ylabel('x [m]')
 ax2.set_ylim(bottom=0)
+
+
+indice_y = np.where(np.diff(np.sign(Sol_2[:, 2])))
+indice_x = np.where(Sol_2[:, 0] == max(Sol_2[:, 0]))
+print(indice_x, max(Sol_2[:, 0]), Sol_2[0, 0] )
+        
+
+# Establecer el límite en el eje x en función del tiempo en el que y es igual a cero, si se encontró
+ax1.set_xlim(left=0, right = t_2[indice_y[0][0]])
+ax2.set_xlim(left=0, right = t_2[indice_x[0][0]])
 
 
 # Datos
@@ -455,13 +464,14 @@ print('Dimensiones de la camára y tobera')
 print(f'L = {L0}', f' Dt = {Dt}', f' De = {De}',f'Dp = {Dp}')
 print(f'Ap/At = {ApAt}', f' Ae/At = {AeAt}', f' Ae/At max = {1/min(Ae_At)}', f'Ae/At prom = {1/np.mean(Ae_At)}')
 print(f'Kn = {Kn}', )
-print(f'Apogeo = {max(h)}', )
+print(f'Apogeo = {max(h)}' )
 #print(Ae_At[1], Presion_camara[0])
+
 
 
 # Muestra todas las figuras
 plt.tight_layout()
-#plt.show()
+plt.show()
 
 
 #Notas
@@ -474,3 +484,7 @@ plt.tight_layout()
 # 14/10/2023
 # El coeficiente de arrastre del cohete no solo es del cohete unicamente sino que tambien influyen las aletas y la
 # el largo del cohete.
+
+# 15/10/2023
+# las graficas obtenidas no cuentan con el descenso con paracaidas es una edición que en el futuro se tienen que añadir.
+# el angulo theta en el acenso debe cambiar con el tiempo

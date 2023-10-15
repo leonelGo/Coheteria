@@ -1,3 +1,5 @@
+# Este es una copia del codigo original hecha el 14/10/2023 para tener un tipo respaldo. 
+#
 # @author: Leonel Gerardo González Pérez
 # Este codigo esta basado en en el excel de Richard Nakka  SRM_2013
 
@@ -5,7 +7,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.constants as C
-import pandas as pd
 from scipy.interpolate import CubicSpline
 from scipy.integrate import odeint
 
@@ -171,9 +172,9 @@ n = 0.319
 a = 8.260
 
 # %%
-P0 = 800 #psi presion de la camara objetivo
-Pa = 14.69594878 # presion atmosferica
-Pe = Pa #psi presion de salida de la tobera
+P0 = 800 #psi, presion de la camara objetivo
+Pa = 14.69594878 # psi, presion atmosferica
+Pe = Pa #psi, presion de salida de la tobera
 
 # %% [markdown]
 # ## Condiciones del Cohete
@@ -246,13 +247,12 @@ while h[i] < h0:
 
     # Área de quemado
     V0 = m_p[i]*1000/rho # cm^3 Volumen con densidad experiemental del grano
-
-    Va0 = (V0)/(1-ApAt*At*4/(np.pi*Dc**2)) # cm^3
+    Va0 = (V0)/(1-ApAt*At*4/(np.pi*Dc**2)) # cm^3 Volumen disponible de la camara
 
     L0 = Va0*10**3/Ac # mm  Longitud del grano con densidad experimental
 
     p0 = [N, Dc-In, Dp, L0/N] #  N, D, d, L, At, = p
-    Ab0 = Ab_(Bs[0],Bs[1],Bs[2], p0)
+    Ab0 = Ab_(Bs[0],Bs[1],Bs[2], p0) # área de quemado
 
     Kn_max= Kn_pol(P0)
     Kn = Kn_(At, Ab0[-1])
@@ -261,35 +261,33 @@ while h[i] < h0:
 
     # %%
     
-    t_web0 = np.array([(Dc-In-Dp)/2])
-    Xinc = np.linspace(0, t_web0[0]/(1+Bs[0]*Bs[1]), Datos)
-    t_web = np.append(t_web0, t_web0[0]-Xinc)
+    t_web0  = np.array([(Dc-In-Dp)/2])
+    Xinc    = np.linspace(0, t_web0[0]/(1+Bs[0]*Bs[1]), Datos)
+    t_web   = np.append(t_web0, t_web0[0]-Xinc)
 
     D = Dc - In - Bs[0]*2*Xinc
     d = Dp + Bs[1]*2*Xinc
     L = L0 - Bs[2]*N*2*Xinc
 
-    Vc = np.pi*(Dc/2)**2*L0/(1000**3) # m^3
-    V_G = 1/4*np.pi*(D**2-d**2)*L/(1000**3) # m^3
-    V_F = Vc - V_G
+    Vc   = np.pi*(Dc/2)**2*L0/(1000**3) # m^3
+    V_G  = 1/4*np.pi*(D**2-d**2)*L/(1000**3) # m^3
+    V_F  = Vc - V_G
 
-    P_a = 0.101325
+    P_a          = 0.101325
 
-    Po_abs1 = [] # En Pa
-    Po_abs2 = [P_a] # En Mpa
-    m_grain = rho*1000*V_G # kg
-    m_gen = [0]
-    m_noz = [0]
-    m_sto = [0]
-    mass_sto = [0]
-    rho_prod = []
-    t1 = [0]
-    #r = lambda P: a*P**n
-    R = [a*(Po_abs2[0]**n)]
+    Po_abs1     = [] # En Pa
+    Po_abs2     = [P_a] # En Mpa
+    m_grain     = rho*1000*V_G # kg
+    m_gen       = [0]
+    m_noz       = [0]
+    m_sto       = [0]
+    mass_sto    = [0]
+    rho_prod    = []
+    t1          = [0]
+    R           = [a*(Po_abs2[0]**n)]
 
     for l in range(len(Xinc)-1):
         rho_prod.append(mass_sto[l]/V_F[l])
-
 
         Po_abs1.append(rho_prod[l]*C.R/M*To+P_a*10**6)
         Po_abs2.append(Po_abs1[l]/(10**6))
@@ -335,10 +333,6 @@ while h[i] < h0:
     Presion_camara = np.append(Po_gage, Pc)
 
     # figura 1
-
-    #plt.show()
-    # print(Xinc[1], R[1], t1[-1], rho_prod[1], mass_sto[1], m_sto[1], m_noz[1],m_gen[1], m_grain[0], m_grain[1], Pc[-1], t2[0]==t1[-1], t2[1]-t2[0], t_final) # 1,1,1,0,0,0,1
-
     # %%
     F = [0]
     C_f = [N_noz]
@@ -364,8 +358,6 @@ while h[i] < h0:
         if Presion_camara[j] > 0 :
             Ae_At.append(A1A2(Presion_camara[j]*10**6, P_a*10**6, k))
     # figura 4
-    # plt.show()
-
 
     # %%
 
@@ -384,9 +376,6 @@ while h[i] < h0:
     F_new = F_spline(t_new)
 
     # figura 2
-    # plt.show()
-
-
     # %%
     def F_(t, t_thrust):
         return np.piecewise(t, [t <= t_thrust, t > t_thrust], [F_spline(t), 0])
@@ -444,7 +433,6 @@ while h[i] < h0:
     Fd_max = 1/2*(p1[1]*p1[2]*densidad_aire(Sol_1[-1, 2])*(Sol_1[-1,3]**2+Sol_1[-1,1]**2)) # Fuerza de arrastre maxima
 
     # figura 3
-    #plt.show()
 
 # Figura 1
 plt.figure(figsize=(7,7))
@@ -506,7 +494,8 @@ print(f'Po max = {max(Po_abs2)*1000000/6895}', f'Po prom = {np.mean(Po_abs2)*100
 print(f'F max = {max(F)}', f'F prom = {np.mean(F)}' )
 print(f'It = {sum(I_t)}', f'Isp = {sum(I_t)/(C.g*m_p[-1])}',  f'm prop = {m_p[-1]}', f'm tot = {M_tot[-1]}')
 print('Dimensiones de la camára y tobera')
-print(f'L = {L0}', f' Dt = {Dt}', f' De = {De}',f'Dp = {Dp}' , f'Ap/At = {ApAt}', f' Ae/At = {AeAt}', f' Ae/At max = {1/min(Ae_At)}', f'Ae/At prom = {1/np.mean(Ae_At)}')
+print(f'L = {L0}', f' Dt = {Dt}', f' De = {De}',f'Dp = {Dp}')
+print(f'Ap/At = {ApAt}', f' Ae/At = {AeAt}', f' Ae/At max = {1/min(Ae_At)}', f'Ae/At prom = {1/np.mean(Ae_At)}')
 print(f'Kn = {Kn}', )
 print(f'Apogeo = {max(h)}', )
 #print(Ae_At[1], Presion_camara[0])
@@ -523,3 +512,7 @@ plt.show()
 
 # No estoy muy seguro porque me da solo un poco los datos diferentes al excel de Nakka, creo que es porque se tiene que poner una presion deseada, 
 # que realmente aqui no se hace eso, mas bien se impone un Ac/At y el Ap/At para así trabajar, ahora una pregunta es si se podria hacer igual con la presión.
+
+# 14/10/2023
+# El coeficiente de arrastre del cohete no solo es del cohete unicamente sino que tambien influyen las aletas y la
+# el largo del cohete.
