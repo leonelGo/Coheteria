@@ -1,4 +1,7 @@
 # Version: Beta
+#   Esta versión no puede calcular correctamente los lanzamiento parabolicos solo cuando el angulo es igual a pi/2 (Sin inclinación)
+#   
+
 # @author: Leonel Gerardo González Pérez
 # Este codigo esta basado en en el excel de Richard Nakka 'SRM_2013': https://www.nakka-rocketry.net/soft/SRM_2023.zip
 
@@ -6,8 +9,11 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.constants as C
+import pandas as pd
 from scipy.interpolate import CubicSpline
 from scipy.integrate import odeint
+
+
 
 # %%
 def mach(P, Po, k):
@@ -113,7 +119,7 @@ N_com = 0.95 # eficiencia de combustion
 N_div = 1/2*(1 + np.cos(alpha)) # factor de corrección por la divergencia
 N_po = 0.95 # factor de corrección de la presion de la camara
 
-rho_rat = 0.95
+rho_rat = 0.9
 
 
 # %%
@@ -130,7 +136,7 @@ n = 0.319
 a = 8.260
 
 # %%
-P0 = 800 #psi, presion de la camara objetivo
+P0 = 400 #psi, presion de la camara objetivo
 Pa = 14.69594878 # psi, presion atmosferica
 Pe = Pa #psi, presion de salida de la tobera
 
@@ -148,8 +154,8 @@ Me = mach(Pe,P0,k)
 Cd = 0.333 # coeficiente de arrastre
 
 
-Dc = 102.26 #mm Diametro de la camara 
-Df = 6 # in, diametro fuselaje
+Dc =  76.2 #mm Diametro de la camara 
+Df = 4 # in, diametro fuselaje
 
 Dp =  50 # Diametro del port
 In = 0 # ancho de los inhibidores
@@ -158,7 +164,7 @@ Af = np.pi*(Df/(2*39.37))**2 # área transversal (6 inch es el diametro del tubo
 Ac = C.pi*(Dc/2)**2 #mm**2 # área de la camara
 
 # 1/7.2 
-AtAc_l = 1/7.2
+AtAc_l = 1/4
 At = Ac*AtAc_l
 Dt = diametro(At)
 
@@ -175,21 +181,21 @@ De = diametro(Ae)
 # Variables del ciclo iterativo
 
 Inc_M = 0.02 # kg, incremento en la masa total por cada iteración
-Datos = 5000 # cantidad de datos para la regresión del grano
-h0 = 3000 # altura deseada 
+Datos = 10000 # cantidad de datos para la regresión del grano
+h0 = 1000 # altura deseada 
 
 
 # Superficies de quemado
 
 # Si es 1 significa que se toma en cuenta si es 0 no se toma en cuenta, si se pone algun otro número se tendran resultados erroneos
 Bs = [0, 1, 1] # Superficies: exterior, nucleo, caras
-N = 4 # Número de segmentos del propelente
+N = 1 # Número de segmentos del propelente
 
 
 Cf = Cf_(Pe, P0, Pa, At, Ae, k)*N_noz
 Ve = ex_vel(C.R/M, To, k)*Cf # Velocidad de salida de los gases de la tobera
 
-m = 60 # masa del cohete sin propelente
+m = 30 # masa del cohete sin propelente
 mp0 = m*(np.exp(np.sqrt(2*C.g*h0)/Ve)-1) # masa minima
 m_p = [mp0] # se utiliza la formula del método que no se considera la fuerza de arrastre para la primera iteración
 M_tot = [m + mp0]
@@ -245,7 +251,7 @@ while h[i] < h0:
     mass_sto    = [0]
     rho_prod    = []
     t1          = [0]
-    R           = [a*(Po_abs2[0]**n)]
+    R           = [a*(Po_abs2[0]**n)] # tasa de quemado
 
     for l in range(len(Xinc)-1):
         rho_prod.append(mass_sto[l]/V_F[l])
@@ -301,7 +307,7 @@ while h[i] < h0:
     Ae_At   = [1]
     I_t     = [0]
     abc     = np.append(np.array(Po_abs1)*10**-6, Pc) # Es solo un paso intermedio
-    Po_thrust = np.append(abc, 0)
+    Po_thrust = np.append(abc, 0) # presion de taill off
     P       = lambda Po: Po*(1+(k-1)/2*Me**2)**(-k/(k-1))
 
     for j in range(len(t_thrust)-1):
@@ -344,6 +350,9 @@ while h[i] < h0:
 
     def dm_(t, t_b):
         return np.piecewise(t, [t <= t_b, t > t_b], [m_noz_spline(t), 0])
+    
+    def theta_(t, theta_0, Vy, Vx):
+        return np.piecewise(t, [t == 0, t > 0], [theta_0, np.arctan(Vy/Vx)])
 
     # Sistema de ecuaciones
     def Sis(CI, t, p):
@@ -396,7 +405,7 @@ plt.figure(figsize=(7,7))
 plt.plot(t_thrust[0:-1], Presion_camara*1000000/6895, 'b-', markersize='2.5')
 plt.ylim(bottom=0)
 plt.ylabel('Presión (psi)')
-plt.xlabel('tiempo (s)')
+plt.xlabel('Tiempo (s)')
 plt.title('Presión de la camára')
 plt.grid()
 
@@ -405,7 +414,7 @@ plt.figure(figsize=(7,7))
 plt.plot(t_thrust, F, 'b-')
 plt.ylim(bottom=0)
 plt.ylabel('Empuje (N)')
-plt.xlabel('tiempo (s)')
+plt.xlabel('Tiempo (s)')
 plt.title('Gráfica de empuje')
 plt.grid()
 
@@ -428,30 +437,46 @@ ax[1].set_title(r'Interpolación de $\dot{m}$ usando Spline Cúbico')
 ax[1].set_ylim(bottom=0)
 
 # Figura 3
-fig2, (ax1, ax2) = plt.subplots(2, figsize=(7, 7))
+plt.figure(figsize=(7,7))
 
-ax1.plot(t_1, Sol_1[:, 2], 'r-') # posición en y 
-ax2.plot(t_1, Sol_1[:, 0], 'r-') # posición en x
-ax1.plot(t_2, Sol_2[:, 2], 'b-') # posición en y
-ax2.plot(t_2, Sol_2[:, 0], 'b-') # posición en x
+plt.plot(t_1, Sol_1[:, 2], 'r-', label = 'Fase propulsada' ) # posición en y 
+plt.plot(t_2, Sol_2[:, 2], 'b-', label = 'Fase sin empuje') # posición en y
 
-ax1.set_xlabel('Tiempo [s]')
-ax1.set_ylabel('y [m]')
-ax1.set_ylim(bottom=0, top = max(Sol_2[:, 2]) + 5 )
+plt.xlabel('Tiempo (s)')
+plt.ylabel('y (m)')
 
-ax2.set_xlabel('Tiempo [s]')
-ax2.set_ylabel('x [m]')
-ax2.set_ylim(bottom=0)
+Ymax = np.where(Sol_2[:, 2] == max(Sol_2[:, 2])) # indice donde la altura es maxima
+plt.xlim(left=0, right = t_2[Ymax[0]])
+plt.ylim(bottom=0, top = max(Sol_2[:, 2]) + 5 )
+plt.legend()
+plt.grid()
 
 
-indice_y = np.where(np.diff(np.sign(Sol_2[:, 2])))
-indice_x = np.where(Sol_2[:, 0] == max(Sol_2[:, 0]))
-print(indice_x, max(Sol_2[:, 0]), Sol_2[0, 0] )
+
+
+
         
 
-# Establecer el límite en el eje x en función del tiempo en el que y es igual a cero, si se encontró
-ax1.set_xlim(left=0, right = t_2[indice_y[0][0]])
-ax2.set_xlim(left=0, right = t_2[indice_x[0][0]])
+
+
+
+## Velocidad
+
+fig3, (ax1, ax2) = plt.subplots(2, figsize=(7, 7))
+
+ax1.plot(t_1, Sol_1[:, 3],'ro', markersize='2.5') # posición en y 
+ax2.plot(t_1, Sol_1[:, 1],'ro', markersize='2.5') # posición en x
+ax1.plot(t_2, Sol_2[:, 3], 'b-') # posición en y
+ax2.plot(t_2, Sol_2[:, 1], 'b-') # posición en x
+
+ax1.set_xlabel('Tiempo (s)')
+ax1.set_ylabel('Vy (m)')
+ax1.set_ylim(bottom=0, top = max(Sol_2[:, 3]) + 5 )
+
+ax2.set_xlabel('Tiempo (s)')
+ax2.set_ylabel('Vx (m)')
+
+
 
 
 # Datos
@@ -464,9 +489,9 @@ print('Dimensiones de la camára y tobera')
 print(f'L = {L0}', f' Dt = {Dt}', f' De = {De}',f'Dp = {Dp}')
 print(f'Ap/At = {ApAt}', f' Ae/At = {AeAt}', f' Ae/At max = {1/min(Ae_At)}', f'Ae/At prom = {1/np.mean(Ae_At)}')
 print(f'Kn = {Kn}', )
-print(f'Apogeo = {max(h)}' )
+#print(f'Apogeo = {max(h)}' )
 #print(Ae_At[1], Presion_camara[0])
-
+#print(Sol_1[0:20, 3], Sol_1[0:20, 1] )
 
 
 # Muestra todas las figuras
