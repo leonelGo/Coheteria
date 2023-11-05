@@ -120,14 +120,26 @@ N_com = 0.95 # eficiencia de combustion
 N_div = 1/2*(1 + np.cos(alpha)) # factor de corrección por la divergencia
 N_po = 0.95 # factor de corrección de la presion de la camara
 
-rho_rat = 0.858
+rho_rat = 0.9
 
 
 # %%
+
+# Nombre del proyecto
+Nombre = 'Citallicue prueba'
+formato ='excel' # Posibles: 'csv', 'txt', 'excel'
+# %%
+
 k = 1.141607     # relación de calores especificos
 M = 0.03573117   # kg/mol masa molecular de los gases 
 To_T = 1820.426    # K temperatura de combustion teorica
 rho_T = 1.8892   # g/cm^3 densidad teorica
+
+To = To_T*N_com # Temperatura "real"
+rho = rho_T*rho_rat    # g/cm^3 densidad medida
+
+# %%
+
 
 To = To_T*N_com # Temperatura "real"
 rho = rho_T*rho_rat    # g/cm^3 densidad medida
@@ -152,22 +164,27 @@ Mt = 1
 Me = mach(Pe,P0,k)
 
 # %%
-Cd = 0.333 # coeficiente de arrastre
+Cd = 0.55 # coeficiente de arrastre
 
 #102.26
 Dc = 102.26 #mm Diametro de la camara 
 Df = 6 # in, diametro fuselaje
 
-Dp =  50 # Diametro del port
+Dp =  (32/16)*25.4 # mm, de pulgadas a mm [(in)*(mm/in)]
+ # Diametro del port
 In = 0 # ancho de los inhibidores y/o revestimiento del grano
 
 Af = np.pi*(Df/(2*39.37))**2 # área transversal (6 inch es el diametro del tubo de fuselaje)
 Ac = C.pi*(Dc/2)**2 #mm**2 # área de la camara
 
 # 1/7.2 
-AtAc_l = 1/7.2
-At = Ac*AtAc_l
-Dt = diametro(At)
+Dt = (24/16)*25.4 # mm, de pulgadas a mm [(in)*(mm/in)]
+At = np.pi*(Dt/2)**2
+AcAt = Ac/At
+
+#AtAc_l = 1/15.25
+#At = Ac*AtAc_l
+# Dt = diametro(At)
 
 ApAt = np.pi*(Dp/2)**2/At
 # 1.6, 1.75
@@ -182,7 +199,7 @@ De = diametro(Ae)
 # Variables del ciclo iterativo
 
 Inc_M = 0.02 # kg, incremento en la masa total por cada iteración
-Datos = 10000 # cantidad de datos para la regresión del grano
+Datos = 20000 # cantidad de datos para la regresión del grano
 h0 = 3000 # altura deseada 
 
 
@@ -190,7 +207,7 @@ h0 = 3000 # altura deseada
 
 # Si es 1 significa que se toma en cuenta si es 0 no se toma en cuenta, si se pone algun otro número se tendran resultados erroneos
 Bs = [0, 1, 1] # Superficies: exterior, nucleo, caras
-N = 4 # Número de segmentos del propelente
+N = 6 # Número de segmentos del propelente
 
 
 Cf = Cf_(Pe, P0, Pa, At, Ae, k)*N_noz
@@ -351,8 +368,8 @@ while h[i] < h0:
     def dm_(t, t_b):
         return np.piecewise(t, [t <= t_b, t > t_b], [m_noz_spline(t), 0])
     
-    def theta_(t, theta_0, Vy, Vx):
-        return np.piecewise(t, [t == 0, t > 0], [theta_0, np.arctan(Vy/Vx)])
+    #def theta_(t, theta_0, Vy, Vx):
+    #    return np.piecewise(t, [t == 0, t > 0], [theta_0, np.arctan(Vy/Vx)])
 
     # Sistema de ecuaciones
     def Sis(CI, t, p):
@@ -396,7 +413,7 @@ while h[i] < h0:
     print(f'Altura alcanzada = {h[i+1]} m')
     i+=1
   
-It2 = integrate.quadrature(F_spline, t_thrust[0], t_thrust[-1], maxiter=900) # Sirve para poder tener una referencia con el It calculado
+# It2 = integrate.quadrature(F_spline, t_thrust[0], t_thrust[-1], maxiter=900) # Sirve para poder tener una referencia con el It calculado
 
 
 
@@ -416,6 +433,8 @@ plt.ylim(bottom=0)
 plt.ylabel('Empuje (N)')
 plt.xlabel('Tiempo (s)')
 plt.title('Gráfica de empuje')
+plt.ylim(top=12000, bottom=0)
+plt.xlim(right = 2)
 plt.grid()
 
 # Figura 2
@@ -427,7 +446,8 @@ ax[0].legend()
 ax[0].set_xlabel('Tiempo (s)')
 ax[0].set_ylabel('Empuje (N)')
 ax[0].set_title('Interpolación de F usando Spline Cúbico')
-ax[0].set_ylim(bottom=0)
+ax[0].set_ylim(bottom =0 )
+
 
 ax[1].plot(t1, m_noz, 'bo', markersize='2.5', label='Datos originales' )
 ax[1].plot(t1_new, m_noz_new, 'r-')
@@ -439,13 +459,15 @@ ax[1].set_ylim(bottom=0)
 # Figura 3
 plt.figure(figsize=(7,7))
 
+Ymax = np.where(Sol_2[:, 2] == max(Sol_2[:, 2])) # indice donde la altura es maxima
+print(Ymax[0][0])
 plt.plot(t_1, Sol_1[:, 2], 'r-', label = 'Fase propulsada' ) # posición en y 
-plt.plot(t_2, Sol_2[:, 2], 'b-', label = 'Fase sin empuje') # posición en y
+plt.plot(t_2[0:Ymax[0][0]], Sol_2[0:Ymax[0][0] , 2], 'b-', label = 'Fase sin empuje') # posición en y
 
 plt.xlabel('Tiempo (s)')
 plt.ylabel('y (m)')
 
-Ymax = np.where(Sol_2[:, 2] == max(Sol_2[:, 2])) # indice donde la altura es maxima
+
 plt.xlim(left=0, right = t_2[Ymax[0]])
 plt.ylim(bottom=0, top = max(Sol_2[:, 2]) + 5 )
 plt.legend()
@@ -479,27 +501,91 @@ plt.ylabel('Presión (psi)')
 plt.legend()
 plt.grid()
 
+t_Brn = t1[-1]
+# t_thr = t_thr
+Po_max = (Po_max + P_a)*1000000/6895
+Po_prom = np.mean(Po_abs2)*1000000/6895
+F_max = max(F)
+F_prom = np.mean(F)
+It = sum(I_t)
+Isp = sum(I_t)/(C.g*m_p[-1])
+mp = m_p[-1]
+m_tot = M_tot[-1]
 
 
 # Datos
+print('')
 print('Datos relevantes')
-print(f'Tiempo de quemado = {t1[-1]}', f'Tiempo de empuje = {t_thrust[-1]}')
-print(f'Po max = {max(Po_abs2)*1000000/6895}', f'Po prom = {np.mean(Po_abs2)*1000000/6895}' )
-print(f'F max = {max(F)}', f'F prom = {np.mean(F)}' )
-print(f'It = {sum(I_t)}', f'Isp = {sum(I_t)/(C.g*m_p[-1])}',  f'm prop = {m_p[-1]}', f'm tot = {M_tot[-1]}')
-print('Dimensiones de la camára y tobera')
-print(f'L = {Lc}', f' Dt = {Dt}', f' De = {De}',f'Dp = {Dp}')
-print(f'Ap/At = {ApAt}', f' Ae/At = {AeAt}', f' Ae/At max = {np.nanmax(Ae_At)}', f'Ae/At prom = {np.nanmean(Ae_At)}')
+print('')
+print(f'Tiempo de quemado = {t_Brn}', f'Tiempo de empuje = {t_thr}')
+print(f'Po max = {Po_max}', f'Po prom = {Po_prom}')
+print(f'F max = {F_max}', f'F prom = {F_prom}' )
+print(f'It = {It}', f'Isp = {Isp}')
+print(f'm = {m}', f'm prop = {mp}', f'm tot = {m_tot}')
+#print(f'It2 = {It2}' )
 print(f'Me = {Me}', )
-print(f'It2 = {It2}' )
-#print(Ae_At[1], Presion_camara[0])
-#print(Sol_1[0:20, 3], Sol_1[0:20, 1] )
 
+print('')
+print('Dimensiones de la camára y tobera')
+print('')
+print(f'L = {Lc}', f' Dt = {Dt}', f' De = {De}', f'Dp = {Dp}')
+print(f'Ap/At = {ApAt}',f'Ac/At = {AcAt}')
+print(f'Ae/At a Po(obj) = {AeAt}', f' Ae/At max = {np.nanmax(Ae_At)}', f'Ae/At prom = {np.nanmean(Ae_At)}')
+
+data = {
+    'Altura objetivo' : [h0],
+    'Tiempo de quemado (s)' : [t_Brn],
+    'Tiempo de empuje (s)' : [t_thr],
+    'Presión Objetivo (psi)' : [P0],
+    'Presión máxima (psi)' : [Po_max],
+    'Presión promedio (psi)' : [Po_prom],
+    'Empuje máximo (N)' : [F_max],
+    'Empuje promedio (N)' : [F_prom],
+    'Impulso total (Ns)' : [It],
+    'Impulso especifico (s)' : [Isp],
+    'Masa del cohete (Kg)' : [m],
+    'Masa propelente (Kg)' : [mp],
+    'Masa total (Kg)' : [m_tot],
+    'Longitud de la cámara (mm)' : [Lc],
+    'Diametro cámara (mm)' : [Dc],
+    'Diametro garganta (mm)' : [Dt], 
+    'Diametro salida (mm)' : [De],
+    'Ac/At' : [AcAt],
+    'Ae/At, Po(obj)' : [AeAt],
+    'Ae/At max' : [np.nanmax(Ae_At)],
+    'Ae/At prom' : [np.nanmean(Ae_At)],
+    'Ap/At' : [ApAt],
+    'Numero de segmentos' : [N],
+    'Diametro del grano (mm)' : [Dc-2*In],
+    'Diametro nucleo del grano (mm)' : [Dp],
+    'Relación de calores especificos' : [k],
+    'Peso molecular (kg/mol)' : [M],
+    'Temperatura de combustión': [To],
+    'Densidad teorica (g/cm^3)' : [rho_T],
+    'Densidad medida (g/cm^3)' : [rho],
+    'Coeficiente de presión (Mpa^1/n)' : [a],
+    'Exponente de presión ' : [n],
+    'Angulo de lanzamiento ' : [theta_0*180/np.pi],
+    'Diametro fuselaje (mm)' : [Df],
+    'Coeficiente de arrastre cohete' : [Cd],
+}
+
+df1 = pd.DataFrame(data)
+
+
+if formato == 'csv':
+    df1.to_csv(f'{Nombre}.csv', index = False)
+elif formato == 'txt':
+    df1.to_csv(f'{Nombre}.txt', sep = '\t', index = False)
+elif formato == 'excel':
+    df1.to_excel(f'{Nombre}.xlsx' , index = False)
+else:
+    print("Formato no compatible")
 
 
 # Muestra todas las figuras
 plt.tight_layout()
-plt.show()
+#plt.show()
 
 
 #Notas
@@ -523,4 +609,9 @@ plt.show()
 #
 # Si la tobera se sella por dentro de la cámara se puede poner un angulo de convergencia mayor para el flujo de los gases y con eso se deben
 # de hacer cambios al codigo, pero seria una mejora, ya que puede reducir el peso de la tobera 
+#
+#
+# 04/11/2023
+# Una adición podria ser obtener un archivo .csv donde muestre todos los datos de obtenidos en los ultimos 'print' además de su conversión 
+# en pulgadas
 #
