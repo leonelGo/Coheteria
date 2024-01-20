@@ -78,6 +78,20 @@ def densidad_aire(h):
     rho = rho_0 * np.exp(-g * M * h / (R * T0))
     return rho
 
+def g_(h):
+    # Gravitational constant (m^3 kg^-1 s^-2)
+    G = 6.67430e-11
+    
+    # Mass of the Earth (kg)
+    M = 5.972e24
+    
+    # Radius of the Earth (m)
+    R = 6.371e6
+    
+    # Calculate gravitational acceleration at altitude h
+    g = (G * M) / (R + h)**2
+    return g
+
 #  Diccionario con los valores para cada combinación de Propelente y Creador
 Datos_propelente = {
     ('KNSU', 'UDEG SPACE'): {'k': 1.141607, 'M': 0.03573117, 'To_T': 1820.426, 'rho_T': 1.8892, 'a': 8.26, 'n': 0.319},
@@ -95,7 +109,6 @@ Datos_propelente = {
 
 # %%
 alpha = 15*np.pi/180 # angulo de la divergencia de la tobera 
-beta = 50*np.pi/180 # Angulo de convergencia
 
 N_noz = 0.85 # # eficiencia de la tobera
 N_com = 0.95 # eficiencia de combustion
@@ -106,12 +119,12 @@ N_po = 0.95 # factor de corrección de la presion de la camara
 # %%
 
 # Nombre del proyecto
-Nombre = 'Citaltonac'
+Nombre = 'Cohete chikito'
 formato ='excel' # Posibles: 'csv', 'txt', 'excel'
 # %%
-Propelente = 'ACPC' # Posibles: KNSU, KNDX, KNSB, KNER, KNMN, KNFR, KNPSB, ACPC
-Creador = 'MIT' # Posibles: Nakka, UDEG SPACE, MIT
-Altura = 1415 # m, Altura sobre el nivel del mar
+Propelente = 'KNSU' # Posibles: KNSU, KNDX, KNSB, KNER, KNMN, KNFR, KNPSB, ACPC
+Creador = 'Nakka' # Posibles: Nakka, UDEG SPACE, MIT
+Altura = 1538 # m, Altura sobre el nivel del mar
 # %%
 
 # Obtener los valores correspondientes
@@ -129,12 +142,12 @@ if Prop:
     print(f"Valores para Propelente: {Propelente}, Creador: {Creador}")
     print(f"k = {k}, M = {M}, To_T = {To_T}, rho_T = {rho_T}, a = {a}, n = {n}" )
 
-rho_rat = 0.938447471
+rho_rat = 0.9
 To = To_T*N_com # Temperatura "real"
 rho = rho_T*rho_rat    # g/cm^3 densidad medida
 
 # %%
-P0 = 200 #psi, presion de la camara objetivo
+P0 = 800 #psi, presion de la camara objetivo
 Pa = 14.69594878 # psi, presion atmosferica
 Pe = Pa #psi, presion de salida de la tobera
 
@@ -142,8 +155,8 @@ Pe = Pa #psi, presion de salida de la tobera
 # ## Condiciones del Cohete
 
 # %%
-theta_0 = np.pi/2 #angulo
-
+theta_0 = np.pi/2#-np.pi/180 #angulo sobre el horizonte
+alpha_0 = 0.02#.05 # angulo de ataque
 
 # Mach
 Mt = 1
@@ -153,20 +166,20 @@ Me = mach(Pe,P0,k)
 Cd = 0.6 # coeficiente de arrastre
 
 #102.26
-Dc = 5*25.4 #102.26 #mm Diametro de la camara 
-Df = 6 # in, diametro fuselaje
+Dc = 25.4 #mm Diametro de la camara 
+Df = 2 # in, diametro fuselaje
 
-Dp =  (48/16)*25.4 # mm, de pulgadas a mm [(in)*(mm/in)] # Diametro del port
+Dp =  (8/16)*25.4 # mm, de pulgadas a mm [(in)*(mm/in)] # Diametro del port
 In = 0 # ancho de los inhibidores y/o revestimiento del grano
 
-Dt = (22/16)*25.4 # mm, de pulgadas a mm [(in)*(mm/in)]
+Dt = (4/16)*25.4 # mm, de pulgadas a mm [(in)*(mm/in)]
 
-m = 35 # masa del cohete sin propelente
+m = .5 # masa del cohete sin propelente
 
 
-Af = np.pi*(Df/(2*39.37))**2 # [m**2] # área transversal  (6 inch es el diametro del tubo de fuselaje)
-Ac = np.pi*(Dc/2)**2 # mm**2 # área de la camara
-At = np.pi*(Dt/2)**2 # mm**2 # área de la garganta
+Af = np.pi*(Df/(2*39.37))**2 # área transversal (6 inch es el diametro del tubo de fuselaje)
+Ac = np.pi*(Dc/2)**2 #mm**2 # área de la camara
+At = np.pi*(Dt/2)**2
 AcAt = Ac/At
 ApAt = np.pi*(Dp/2)**2/At
 # 1.6, 1.75
@@ -180,32 +193,32 @@ De = diametro(Ae)
 
 # Variables del ciclo iterativo
 
-
+r0 = 6371000 # radio medio de la tierra
 Datos = 10000 # cantidad de datos para la regresión del grano
-h0 = 3000 # altura deseada 
+h0 = 300  # altura deseada 
 
 
 # Superficies de quemado
 
 # Si es 1 significa que se toma en cuenta si es 0 no se toma en cuenta, si se pone algun otro número se tendran resultados erroneos
 Bs = [0, 1, 1] # Superficies: exterior, nucleo, caras
-N = 2 # Número de segmentos del propelente
+N = 1 # Número de segmentos del propelente
 
 
 Cf = Cf_(Pe, P0, Pa, At, Ae, k)*N_noz
 c_ast = ex_vel(cte.R/M, To, k)
 Ve = c_ast*Cf # Velocidad de salida de los gases de la tobera
-print(f'Ve {cte.R ,Ve, mdot(np.pi*(0.0381/2)**2,P0*6894.76, k, To, cte.R/M), Ve*mdot(np.pi*(0.0381/2)**2,P0*6894.76, k, To, cte.R/M)}')
 
-mp0 = m*(np.exp(np.sqrt(2*cte.g*h0)/Ve)-1) # masa minima de propelente
+
+mp0 = m*(np.exp(np.sqrt(2*cte.g*(h0))/Ve)-1) # masa minima de propelente
 m_p = [mp0] # se utiliza la formula del método que no se considera la fuerza de arrastre para la primera iteración
 M_tot = [m + mp0]
-
 print(mp0)
+
 
 # Ciclo iterativo
  
-Tolerancia = 0.1 # Error de la altura alcanzada en metros
+Tolerancia = 5 # Error de la altura alcanzada en metros
 
 i = 0
 h = [0]
@@ -293,12 +306,6 @@ while np.abs(h0-h[i]) > Tolerancia:
     t2 = np.linspace(0, t_final, 100) # tiempo de taill off
     t_thrust = np.append(np.array(t1), t2[1:]+ t1[-1])
 
-    # Verifica si t_thrust está ordenado de forma creciente
-    if np.all(np.diff(t_thrust) > 0):
-        print("Los valores en t_thrust están ordenados de forma creciente.")
-    else:
-        print("Los valores en t_thrust no están ordenados de forma creciente.")
-
     Pc = np.array((Po_abs2[-1])*(np.exp(-A1*t2[1:]/A2))) # presión de taill off
     Po_gage = np.append(np.array(Po_abs1)*10**-6, Pc) - P_a
     Presion_camara = Po_gage 
@@ -353,41 +360,49 @@ while np.abs(h0-h[i]) > Tolerancia:
     
     #def theta_(t, theta_0, Vy, Vx):
     #    return np.piecewise(t, [t == 0, t > 0], [theta_0, np.arctan(Vy/Vx)])
-
+    
+    I =  0.000188917*100 # Momento de inercia
+    CG = 2.14
+    CP = 2.33
+    l2 = CG-CP
+    Cl = 0.01
     # Sistema de ecuaciones
     def Sistema(CI, t, p):
-        m, Cd, A, t_thrust, t_b, theta_0, fase = p
-        x, u, y, v = CI
+        m, Cd, Cl, A, t_thrust, t_b, I, l2, fase = p
+        s, v, r, Gamma, dA, alpha = CI
 
         F_t = F_(t, t_thrust)
         dm_t = dm_(t, t_b)
         
-        dxdt = u
-        dudt = (1/(m-fase*(dm_t)*t))*(fase*F_t - 0.5*densidad_aire(y+Altura)*A*Cd*(u**2 + v**2))*np.cos(theta_0)
-
-        dydt = v
-        dvdt = (1/(m-fase*(dm_t)*t))*(fase*F_t - 0.5*densidad_aire(y+Altura)*A*Cd*(u**2 + v**2))*np.sin(theta_0) - cte.g
         
-        return [dxdt, dudt, dydt, dvdt]
+        dvdt = (1/(m-fase*(dm_t)*t))*(fase*F_t*np.cos(alpha) - 0.5*densidad_aire((r-r0)+Altura)*A*Cd*(v**2)) - cte.g*np.sin(Gamma)
+        drdt = v*np.sin(Gamma) # dydt
+
+        dGammadt = (1/(v*(m-fase*(dm_t)*t)))*(fase*F_t*np.sin(alpha)+ 0.5*densidad_aire((r-r0)+Altura)*(A)*Cl*(v**2)) - (cte.g/v-v/r)*np.cos(Gamma)
+        dsdt = (r0/r)*v*np.cos(Gamma) # dxdt
+
+        dAdt = (1/I)*(l2*(0.5*densidad_aire((r-r0)+Altura)*(A)*Cl*(v**2)*np.cos(alpha)+0.5*densidad_aire((r-r0)+Altura)*A*Cd*(v**2)*np.sin(alpha)))
+        dalphadt = dA
+        return [dsdt, dvdt, drdt, dGammadt, dalphadt, dAdt]
 
 
     t_thr = t_thrust[-1] # tiempo de empuje
 
     # Calculos fase 1
-    CI1 = [0, 0, 0, 0] # Condiciones iniciales x0, Vx0, y0, Vy0
+    CI1 = [0.01, 0.01, r0, theta_0, alpha_0, 0] # Condiciones iniciales x0, Vx0, y0, Vy0
     t_1 = np.linspace(0, t_thr, 1000)
-    p1 = [M_tot[i], Cd , Af, t_thr, t1[-1], theta_0, 1]
+    p1 = [M_tot[i], Cd, Cl, Af, t_thr, t1[-1], I, l2, 1]
     Sol_1 = odeint(Sistema, CI1, t_1, args=(p1, ))
 
     # Calculos fase 2
     
-    CI2 = [Sol_1[-1,0], Sol_1[-1,1], Sol_1[-1,2], Sol_1[-1,3]] # Condiciones iniciales
+    CI2 = [Sol_1[-1,0], Sol_1[-1,1], Sol_1[-1,2], Sol_1[-1,3], Sol_1[-1,4],  Sol_1[-1,5]] # Condiciones iniciales
     t_2 = np.linspace(t_thr,  50, 1000) # Si en la gráfica no se ve todo el descenso cambiar el tiempo final
-    p2 = [m, Cd , Af, t_thr, t1[-1], theta_0, 0]
+    p2 = [m, Cd, Cl, Af, t_thr, t1[-1],I, l2, 0]
     Sol_2 = odeint(Sistema, CI2, t_2, args=(p2, ))
     
 
-    h.append(max(Sol_2[:,2]))
+    h.append(max(Sol_2[:,2])-r0)
 
     if np.abs(h0-h[i]) > Tolerancia:
         Inc_M = m_p[i]/h[i+1]*(h0-h[i+1])
@@ -442,16 +457,17 @@ ax[1].grid()
 plt.figure(figsize=(7,7))
 
 Ymax = np.where(Sol_2[:, 2] == max(Sol_2[:, 2])) # indice donde la altura es maxima
-
-plt.plot(t_1, Sol_1[:, 2], 'r-', label = 'Fase propulsada' ) # posición en y 
-plt.plot(t_2[:Ymax[0][0]], Sol_2[:Ymax[0][0] , 2], 'b-', label = 'Fase sin propulsción') # posición en y
+l = Sol_1[:, 2] -r0
+l1 = Sol_2[:Ymax[0][0] , 2] -r0
+plt.plot(t_1, l, 'r-', label = 'Fase propulsada' ) # posición en y 
+plt.plot(t_2[:Ymax[0][0]], l1, 'b-', label = 'Fase sin propulsción') # posición en y
 
 plt.xlabel('Tiempo (s)')
 plt.ylabel('y (m)')
 
 
-plt.xlim(left=0, right = t_2[Ymax[0]])
-plt.ylim(bottom=0, top = max(Sol_2[:, 2]) + 5 )
+#plt.xlim(left=0, right = t_2[Ymax[0]])
+#plt.ylim(bottom=0, top = max(Sol_2[:, 2]) + 5 )
 plt.legend()
 plt.grid()
 
@@ -462,7 +478,7 @@ fig3, (ax1, ax2) = plt.subplots(2, figsize=(7, 7))
 
 ax1.plot(t_1, Sol_1[:, 3],'r-', markersize='2', label = 'Fase propulsada') # Velocidad en y 
 ax2.plot(t_1, Sol_1[:, 1],'r-', markersize='2', label = 'Fase propulsada') # Velocidad en x
-ax1.plot(t_2[:Ymax[0][0]], Sol_2[:Ymax[0][0], 3], 'b-', label = 'Fase sin propulsción') # Velocidad en y
+#ax1.plot(t_2[:Ymax[0][0]], Sol_2[:Ymax[0][0], 3], 'b-', label = 'Fase sin propulsción') # Velocidad en y
 ax2.plot(t_2[:Ymax[0][0]], Sol_2[:Ymax[0][0], 1], 'b-', label = 'Fase sin propulsción') # Velocidad en x
 
 ax1.set_xlabel('Tiempo (s)')
@@ -471,9 +487,9 @@ ax1.set_ylabel(r'$V_{y}$ (m)')
 ax1.legend()
 ax1.grid()
 
-ax2.set_xlabel('Tiempo (s)')
-ax2.set_ylabel(r'$V_{x}$ (m)')
-ax2.legend()
+#ax2.set_xlabel('Tiempo (s)')
+#ax2.set_ylabel(r'$V_{x}$ (m)')
+#ax2.legend()
 ax2.grid()
 
 # Figura 6
@@ -488,6 +504,11 @@ plt.ylabel('Presión (psi)')
 plt.legend()
 plt.grid()
 
+
+plt.figure(figsize=(7,7))
+plt.plot(t_1, Sol_1[:,4], 'r-')
+plt.plot(t_2, Sol_2[:,4], 'b-')
+
 t_Brn = t1[-1]
 # t_thr = t_thr
 Po_max = (Po_max + P_a)*1000000/6895
@@ -498,7 +519,7 @@ It = sum(I_t)
 Isp = sum(I_t)/(cte.g*m_p[-1])
 mp = m_p[-1]
 m_tot = M_tot[-1]
-L_noz = (De-Dt)/(2*np.tan(alpha)) + (Dc-Dt)/(2*np.tan(beta))
+
 
 # Datos
 print('')
@@ -515,7 +536,7 @@ print(f'Me = {Me}', )
 print('')
 print('Dimensiones de la cámara y tobera')
 print('')
-print(f'L_c = {Lc}',f'L_noz = {L_noz}', f' Dt = {Dt}', f' De = {De}', f'Dp = {Dp}')
+print(f'L = {Lc}', f' Dt = {Dt}', f' De = {De}', f'Dp = {Dp}')
 print(f'Ap/At = {ApAt}',f'Ac/At = {AcAt}')
 print(f'Ae/At a Po(obj) = {AeAt}', f' Ae/At max = {np.nanmax(Ae_At)}', f'Ae/At prom = {np.nanmean(Ae_At)}')
 

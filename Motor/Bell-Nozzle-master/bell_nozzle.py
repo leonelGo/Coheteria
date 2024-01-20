@@ -342,7 +342,7 @@ def draw_angle_arc(ax, theta_n, origin, degree_symbol=r'$\theta$'):
 	# angle
 	arc_obj = Arc([startx, starty], 1, 1, 0, 0, math.degrees(theta_n), color='k' )
 	ax.add_patch(arc_obj)
-	ax.text(startx+0.5, starty+0.5, degree_symbol + ' = ' + str(round(theta_n,1)) + u"\u00b0")	
+	ax.text(startx+1, starty+1, degree_symbol + ' = ' + str(round(math.degrees(theta_n),1)) + u"\u00b0")	
 	return
 
 # ring of radius r, height h, base point a
@@ -425,13 +425,13 @@ if __name__=="__main__":
 	
 	# constants
 	k 	= 1.141607		# ratio of specific heats
-	l_percent = 90	# nozzle length percntage (60, 80, 90)
+	l_percent = 80	# nozzle length percntage (60, 80, 90)
 	
 	# typical upper stage values
 
-	Dc = 80
-	aratio = 8.41			# Ae / At	
-	throat_radius = 19.05 		# {'radius_throat': 40, 'radius_exit': 210}		
+	Dc = 0
+	aratio = 8.413			# Ae / At	
+	throat_radius = 20 		# {'radius_throat': 40, 'radius_exit': 210}		
 
 	# rao_bell_nozzle_contour
 	angles, contour = bell_nozzle(k, aratio, throat_radius, l_percent)
@@ -442,8 +442,8 @@ if __name__=="__main__":
 	# --------------- Nozzle-2------------------
 
 	# typical lower stage booster values
-	aratio = 7 				# Ae / At	
-	throat_radius = 800 	# 	
+	aratio = 8.413			# Ae / At	
+	throat_radius = 20 	# 	
 
 	# rao_bell_nozzle_contour
 	angles, contour = bell_nozzle(k, aratio, throat_radius, l_percent)
